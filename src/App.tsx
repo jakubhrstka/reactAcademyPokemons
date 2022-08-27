@@ -1,26 +1,56 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
 
-function App() {
+import { Card } from "./components/Card";
+import { Button } from "./components/Button";
+import { GridStyled } from "./components/Grid";
+import { PageStyled } from "./components/Page";
+
+import { api } from "./lib/api";
+
+import { IPokemonBasic, IFetchPokemonResponse } from "./types";
+
+export const App: React.FC = () => {
+  const [pokemonsList, setPokemonsList] = useState<IFetchPokemonResponse | null>(null);
+  const [pokemons, setPokemons] = useState<IPokemonBasic[]>([]);
+
+  const getPokemons = async () => {
+    try {
+      const result = await api.fetchPokemons();
+
+      setPokemonsList(result.data);
+      setPokemons(result.data.results);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const loadMoreHandler = async () => {
+    try {
+      if (pokemonsList) {
+        const result = await api.fetchMorePokemons(pokemonsList.next);
+
+        setPokemonsList(result.data);
+
+        let pokemonsCopy = [...pokemons];
+        setPokemons(pokemonsCopy.concat(result.data.results));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getPokemons();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <PageStyled>
+      <GridStyled>
+        {pokemons.map((pokemon, idx) => (
+          <Card key={idx} pokemon={pokemon} />
+        ))}
+      </GridStyled>
+      <Button onClick={loadMoreHandler}>Get more pokemons</Button>
+    </PageStyled>
   );
-}
-
-export default App;
+};
